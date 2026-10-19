@@ -11,10 +11,9 @@ The analysis estimates how the arrival of Uber and Lyft (2012–2016) changed ho
 ```
 ├── scripts/
 │   ├── roc_pipeline.py        # full analysis: all tables and figures in the paper
-│   └── get_acs_vehicles.py    # optional: re-downloads the ACS vehicle tables
+│   
 └── data/
     ├── Counties_2010-2017_full_dataset_new.csv
-    └── ACS_vehicles_2010-2017.csv
 ```
 
 ## Data

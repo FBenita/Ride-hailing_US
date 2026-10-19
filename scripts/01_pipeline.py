@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Ride-hailing entry and household vehicle ownership in U.S. metro counties, 2010-2017
 ====================================================================================
@@ -13,48 +12,6 @@ Outputs (created if missing):
     <out>/Tables/*.tex     ready for \\input{Tables/...} in Overleaf
     <out>/Tables/all_estimates.csv   every estimate, for checking
     <out>/run_log.tex      the full console log as a compilable LaTeX file
-
-File names follow the paper: T1-T4 main tables, A1-A3 appendix tables, F1-F2 main figures, FA1 appendix
-figure. D1-D2 are documentation tables that are not in the paper.
-
-Estimators (all written with numpy, no extra packages):
-    * Callaway and Sant'Anna (2021) group-time ATTs, base year = year before entry, aggregated by event time
-      with cohort-size weights (counties, or households for the household-weighted estimand).
-      Comparison: counties not yet reached by ride-hailing. Metro areas without a date in Lee et al. (2022)
-      stay in the comparison group only until their driver supply first rises (see below).
-    * Extended two-way fixed effects (Wooldridge 2025): county and year effects estimated from untreated
-      observations only, cohort x year effects after entry, optional 2006-2010 characteristics x year,
-      time-varying controls, and treatment x characteristic interactions for heterogeneity.
-    * Long difference over the non-overlapping ACS windows 2008-2012 and 2013-2017.
-    * Static two-way fixed effects (for contrast only).
-    Inference: MSA block bootstrap (Callaway-Sant'Anna) and MSA-clustered standard errors (regressions).
-
-Entry dates for undated metro areas: the year in which MSA driver supply (nonemployer taxi and limousine
-establishments per 10,000 residents, population-weighted over the MSA's counties) first rises by at least
-DETECT_JUMP over the previous year and stays at least that much above it in every later year. The threshold
-is chosen on the 184 dated metro areas (Table A3). Upstate New York is dated by law (29 June 2017).
-
-Vehicle outcomes: ACS_vehicles_2010-2017.csv (written by get_acs_vehicles.py: tables B25044 and B25046) is read from
-the folder of the county CSV, or from this script's folder, or from --veh. It gives the shares with 3 and with 4+
-vehicles and the mean number of vehicles per household (aggregate vehicles / households). Without it the script
-falls back to the capped index (three or more counted as three).
-
-Requirements: Python 3.9+, numpy, pandas, scipy, matplotlib. Runs as a script or pasted into a Jupyter cell.
-
-Version 4 (17 Oct 2026): extended TWFE covariates interacted with every post-entry cell (now equal to imputation);
-leads for all pre-entry years; terciles on cohorts 2012-2014 through 2016; uncapped vehicle outcomes; benchmark
-table removed; Table 3 is now the heterogeneity table.
-
-Version 3 (17 Oct 2026), after an external audit of version 2:
-    * comparison group cleaned: undated metro areas leave it in the year their driver supply rises
-    * summary window 0-2 years after entry: in 2017 only 37 metro counties had no ride-hailing
-    * extended TWFE replaces Sun and Abraham in the robustness table and gives the heterogeneity estimates,
-      so that characteristic-specific trends are absorbed before effects are compared across counties
-    * fixed: household-weighted Sun and Abraham aggregated cohorts by county counts (now household sums)
-    * dropped: treated-only comparison (in 2016 its only comparison counties are one MSA) and the
-      outcome-regression covariate design (extrapolates far outside the comparison counties' range);
-      a common-support check takes their place
-    * new: cohort-balanced event study, common-support subsample, count of bootstrap draws that lose a cell
 """
 import argparse
 import io
@@ -72,18 +29,17 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 # ----------------------------------------------------------------------------- CONFIG
-OUT_ROOT = r"C:\Users\L03565094\Dropbox\Francisco\Papers2023\Uber_Lyft_Ownership\04-Results"
+OUT_ROOT = r"C:\Users\04-Results"
 # Put the CSV next to this script, or change this path, or pass --data
 try:
     HERE = os.path.dirname(os.path.abspath(__file__))
-except NameError:          # running inside Jupyter: use the notebook's folder
+except NameError:         
     HERE = os.getcwd()
 DATA_PATH = os.path.join(HERE, "Counties_2010-2017_full_dataset_new.csv")
-# ACS tables B25044 and B25046 (written by get_acs_vehicles.py); used when present, otherwise the capped index
-VEH_NAME = "ACS_vehicles_2010-2017.csv"   # looked for next to the county CSV (e.g. 01-Data), then next to this script
+VEH_NAME = "ACS_vehicles_2010-2017.csv"  
 N_BOOT = 999
 SEED = 20261017
-DETECT_JUMP = 1.0            # drivers per 10,000 residents; chosen on the dated metro areas (Table A3)
+DETECT_JUMP = 1.0            # drivers per 10,000 residents; chosen on the dated metro areas 
 DETECT_GRID = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0]
 
 YEARS = list(range(2010, 2018))
@@ -619,9 +575,7 @@ def long_difference(y, units, Gc, weighted=False):
 
 
 def old_design_normalization(m):
-    """Earlier manuscript design: treated counties only, MSA + year dummies, event dummies, time-varying
-    controls. Returns event coefficients under R's implicit normalization (D=-1 and D=+5 at zero) and an
-    alternative one (D=-1 and D=-7 at zero). Both are equally valid because the design is rank deficient."""
+    """"""
     d = m[m.G > 0].copy()
     d["D"] = d.year - d.G
     d["internet"] = d.internet_levels.where(d.internet_levels != 1, 2)
@@ -906,8 +860,8 @@ def main():
               "counties without a recorded entry year with no sustained rise in taxi and limousine nonemployers by 2017. Upstate "
               "New York: counties where ride-hailing was not allowed until 29 June 2017. Both are subsets of the "
               "no-recorded-entry group. Poverty rate: percentage of families and people whose income in the past 12 "
-              "months is below the poverty level (ACS DP03). " +
-              ("Vehicles per household: aggregate vehicles available (ACS B25046) divided by households. "
+              "months is below the poverty level. " +
+              ("Vehicles per household: aggregate vehicles available  divided by households. "
                if HAS_VEH else "Capped vehicle index: households with three or more vehicles counted as three. ") +
               "Taxi and limousine nonemployers: nonemployer establishments in NAICS 4853 per 10,000 residents.")
 
@@ -1341,8 +1295,8 @@ def main():
               "never-treated comparison, MSA-clustered, cohorts weighted by households. Main design: as in the "
               "main table. Medians over all U.S. counties. * $p<0.10$; ** $p<0.05$; *** $p<0.01$.")
 
-    # ------------------------------------------------------------------ documentation: earlier design
-    log.section("DOCUMENTATION D1: EARLIER DESIGN (TREATED ONLY, MSA DUMMIES) IS NOT IDENTIFIED")
+    # ------------------------------------------------------------------ documentation:
+    log.section("")
     old, ncol, rank = old_design_normalization(m)
     log(f"Design columns {ncol}, rank {rank}")
     rows = []
@@ -1355,9 +1309,9 @@ def main():
               "Documentation: event-time coefficients of the earlier design under two equally valid normalizations",
               "tab:olddesign", ["", "3 before", "2 before", "Entry", "1 after", "2 after", "3 after"], rows,
               "l|c|c|c|c|c|c",
-              "Not part of the paper. Treated counties only, MSA and year dummies, event-time dummies and "
+              "Treated counties only, MSA and year dummies, event-time dummies and "
               "time-varying controls. The event-time dummies are collinear with the MSA and year dummies, so a "
-              "second reference period must be dropped. R drops the dummy for 5 years after entry (default); the "
+              "second reference period must be dropped. Drops the dummy for 5 years after entry (default); the "
               "alternative drops 7 years before entry.")
 
     pd.DataFrame(records).to_csv(os.path.join(tabdir, "all_estimates.csv"), index=False)
